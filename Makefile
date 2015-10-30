@@ -1,5 +1,48 @@
 KFVER=130
 
+## Configure
+
+LIBNAME := kissfft
+
+BUILDDIR := build
+
+DYN_LIB := $(BUILDDIR)/lib$(LIBNAME).so
+STATIC_LIB := $(BUILDDIR)/lib$(LIBNAME).a
+
+## Build targets
+
+SRC_FILES := kiss_fftndr.c kiss_fftnd.c kiss_fftr.c kiss_fastfir.c kiss_fft.c
+OBJ_FILES := $(patsubst %.c,$(BUILDDIR)/%.o,$(SRC_FILES))
+
+## Flags
+
+CFLAGS += -I. -I./tools
+
+# for shared libraries (.so)
+CFLAGS += -fPIC
+
+## Rules
+
+all:  $(OBJ_FILES) $(DYN_LIB) $(STATIC_LIB)
+
+$(OBJ_FILES): | $(BUILDDIR)
+
+$(DYN_LIB): CFLAGS += -shared 
+$(DYN_LIB): $(OBJ_FILES)
+	$(LINK.c) $^ $(LOADLIBES) $(LDLIBS) -o $@
+
+$(STATIC_LIB): $(OBJ_FILES)
+	$(AR) $(ARFLAGS) $@ $^
+
+$(BUILDDIR)/%.o : %.c
+	$(COMPILE.c) -o $@ $<
+
+$(BUILDDIR)/%.o : tools/%.c
+	$(COMPILE.c) -o $@ $<
+
+$(BUILDDIR):
+	mkdir -p $@
+
 doc:
 	@echo "Start by reading the README file.  If you want to build and test lots of stuff, do a 'make testall'"
 	@echo "but be aware that 'make testall' has dependencies that the basic kissfft software does not."
@@ -23,6 +66,7 @@ clean:
 	cd test && make clean
 	cd tools && make clean
 	rm -f kiss_fft*.tar.gz *~ *.pyc kiss_fft*.zip 
+	rm -Rf $(BUILDDIR)
 
 asm: kiss_fft.s
 
